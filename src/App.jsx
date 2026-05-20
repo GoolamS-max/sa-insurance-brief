@@ -144,19 +144,15 @@ function extractJsonArray(raw) {
 async function fetchLane(lane) {
   const today = new Date();
   const dateStr = today.toLocaleDateString("en-ZA", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
 
   const systemPrompt = `Today is ${dateStr}. You are an insurance industry news researcher for South Africa. Search the web for real, verifiable SA insurance news articles published today or in the last 48 hours specifically about: ${lane.topic}. Prioritise these sources: ${SOURCES}. Return ONLY a raw JSON array — no markdown, no backticks, no preamble, no explanation. Start with [ and end with ]. Each object must have exactly these fields: title (string), summary (string, 2 sentences max), source (string, publication name), url (string, direct article permalink not homepage), category (string), date (string, ISO or readable), timeAgo (string e.g. "2 hours ago"). Return 4–6 articles, newest first. If fewer than 4 real articles exist, return what you find. Do not fabricate URLs.`;
 
   const userPrompt = `Search for the latest South African insurance news today (${dateStr}) in the category: ${lane.label}. Return the JSON array only.`;
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+  const resp = await fetch("/api/proxy", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-calls": "true",
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
