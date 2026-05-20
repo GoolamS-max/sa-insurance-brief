@@ -413,20 +413,25 @@ export default function App() {
     // Fetch rates concurrently
     fetchRates().then(setRates).catch(() => {});
 
-    // Fetch each lane concurrently
-    const results = await Promise.allSettled(LANES.map(lane => fetchLane(lane)));
-
-    results.forEach((result, i) => {
+    // Fetch lanes one at a time with delay to respect free tier rate limits
+    for (let i = 0; i < LANES.length; i++) {
       const lane = LANES[i];
-      setLaneData(prev => ({
-        ...prev,
-        [lane.id]: {
-          articles: result.status === "fulfilled" ? result.value : [],
-          loading: false,
-          error: result.status === "rejected" ? (result.reason?.message || "Failed to load") : null,
-        }
-      }));
-    });
+      try {
+        const articles = await fetchLane(lane);
+        setLaneData(prev => ({
+          ...prev,
+          [lane.id]: { articles, loading: false, error: null }
+        }));
+      } catch (err) {
+        setLaneData(prev => ({
+          ...prev,
+          [lane.id]: { articles: [], loading: false, error: err.message || "Failed to load" }
+        }));
+      }
+      if (i < LANES.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 15000));
+      }
+    }
 
     const now = new Date();
     setUpdatedAt(`${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} SAST`);
